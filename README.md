@@ -82,3 +82,14 @@ pymysql.install_as_MySQLdb()
 | Login | `/login/` |
 | Admin portal | `/dashboard/` |
 | Billing portal | `/billing/` |
+
+## Assumptions and limitations
+- Product price is entered **without GST**; GST % is added on top per product.
+- Bill discount is a flat rupee amount; GST is calculated on the price after discount.
+- Return refund = price + GST, reduced by the same share of the bill discount.
+- A bill that already has returns cannot be cancelled.
+- A product / staff / supplier that is already used in bills or purchases is not hard deleted
+  (product and staff are deactivated instead) to keep the old bills correct.
+- `USE_TZ = False` is used so date filters work in MySQL without loading time zone tables.
+- Shop name and address printed on the bill are in `settings.py` (`SHOP_NAME`, etc.).
+- Bootstrap and fonts are loaded from CDN, so internet is needed to view the styles.
