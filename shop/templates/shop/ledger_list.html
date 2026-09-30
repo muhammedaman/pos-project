@@ -1,0 +1,47 @@
+{% extends 'shop/base.html' %}
+{% block title %}Ledger{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="page-title mb-0">Ledger</h4>
+    <a href="{% url 'ledger_add' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add entry</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-6 col-md-3"><input type="date" name="from" value="{{ from_date }}" class="form-control"></div>
+    <div class="col-6 col-md-3"><input type="date" name="to" value="{{ to_date }}" class="form-control"></div>
+    <div class="col-6 col-md-3">
+        <select name="type" class="form-select">
+            <option value="">Credit and debit</option>
+            <option value="credit" {% if entry_type == 'credit' %}selected{% endif %}>Credit only</option>
+            <option value="debit" {% if entry_type == 'debit' %}selected{% endif %}>Debit only</option>
+        </select>
+    </div>
+    <div class="col-6 col-md-3"><button class="btn btn-outline-primary w-100">Filter</button></div>
+</form>
+
+<div class="row g-3 mb-3">
+    <div class="col-4"><div class="card"><div class="card-body py-2"><div class="small text-muted">Credit</div><div class="fw-bold text-success">₹{{ total_credit|floatformat:2 }}</div></div></div></div>
+    <div class="col-4"><div class="card"><div class="card-body py-2"><div class="small text-muted">Debit</div><div class="fw-bold text-danger">₹{{ total_debit|floatformat:2 }}</div></div></div></div>
+    <div class="col-4"><div class="card"><div class="card-body py-2"><div class="small text-muted">Balance</div><div class="fw-bold">₹{{ balance|floatformat:2 }}</div></div></div></div>
+</div>
+
+<div class="card"><div class="card-body">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0">
+        <thead><tr><th>Date</th><th>Description</th><th class="text-end">Credit</th><th class="text-end">Debit</th></tr></thead>
+        <tbody>
+        {% for e in entries %}
+            <tr>
+                <td class="text-nowrap">{{ e.created_at|date:"d-m-Y H:i" }}</td>
+                <td>{{ e.description }}</td>
+                <td class="text-end text-success">{% if e.entry_type == 'credit' %}₹{{ e.amount }}{% endif %}</td>
+                <td class="text-end text-danger">{% if e.entry_type == 'debit' %}₹{{ e.amount }}{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="text-muted">No entries found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div></div>
+{% endblock %}

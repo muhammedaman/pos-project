@@ -1,0 +1,262 @@
+{% extends 'shop/billing_base.html' %}
+{% block title %}New bill{% endblock %}
+{% block content %}
+<div class="row g-3">
+    <!-- left side: products -->
+    <div class="col-lg-7">
+        <input type="text" id="search" class="form-control form-control-lg mb-3" placeholder="Search product name or scan barcode, then press Enter" autofocus autocomplete="off">
+        <div class="row g-2" id="productList"></div>
+    </div>
+
+    <!-- right side: cart -->
+    <div class="col-lg-5">
+        <div class="card cart-box"><div class="card-body">
+            <h5 class="mb-3">Current bill</h5>
+            <div class="cart-scroll mb-2">
+                <table class="table table-sm align-middle mb-0">
+                    <tbody id="cartBody"></tbody>
+                </table>
+                <div id="emptyCart" class="text-muted py-3 text-center">Cart is empty. Tap a product to add it.</div>
+            </div>
+
+            <div class="row g-2 mb-2">
+                <div class="col-6"><input type="text" id="custName" class="form-control form-control-sm" placeholder="Customer name"></div>
+                <div class="col-6"><input type="text" id="custPhone" class="form-control form-control-sm" placeholder="Phone"></div>
+            </div>
+
+            <div class="d-flex justify-content-between"><span>Sub total</span><span id="subTotal">₹0.00</span></div>
+            <div class="d-flex justify-content-between align-items-center my-1">
+                <span>Discount (₹)</span>
+                <input type="number" id="discount" min="0" value="0" class="form-control form-control-sm text-end" style="width:100px;">
+            </div>
+            <div class="d-flex justify-content-between"><span>GST</span><span id="gstTotal">₹0.00</span></div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between fs-4 fw-bold"><span>Total</span><span id="grandTotal">₹0.00</span></div>
+
+            <div class="btn-group w-100 my-3" role="group">
+                <input type="radio" class="btn-check" name="pay" id="payCash" value="cash" checked>
+                <label class="btn btn-outline-primary" for="payCash">Cash</label>
+                <input type="radio" class="btn-check" name="pay" id="payCard" value="card">
+                <label class="btn btn-outline-primary" for="payCard">Card</label>
+                <input type="radio" class="btn-check" name="pay" id="payUpi" value="upi">
+                <label class="btn btn-outline-primary" for="payUpi">UPI</label>
+            </div>
+
+            <div id="cashBox" class="d-flex justify-content-between align-items-center mb-3">
+                <span>Cash received</span>
+                <input type="number" id="received" min="0" class="form-control form-control-sm text-end" style="width:110px;" placeholder="0">
+                <span class="small">Change: <b id="changeAmt">₹0.00</b></span>
+            </div>
+
+            <div id="errorBox" class="alert alert-danger py-2 d-none"></div>
+            <button id="saveBtn" class="btn btn-primary w-100 btn-lg"><i class="bi bi-printer"></i> Save &amp; print bill</button>
+            <button id="clearBtn" class="btn btn-light w-100 mt-2 btn-sm">Clear bill</button>
+        </div></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var cart = [];
+var shown = [];   // products currently shown on the left
+var csrfToken = '{{ csrf_token }}';
+
+function money(x) { return '₹' + x.toFixed(2); }
+
+function loadProducts() {
+    var q = document.getElementById('search').value;
+    fetch("{% url 'billing_products' %}?q=" + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            shown = data.products;
+            var box = document.getElementById('productList');
+            box.innerHTML = '';
+            if (shown.length === 0) {
+                box.innerHTML = '<div class="text-muted">No product found (or out of stock).</div>';
+            }
+            shown.forEach(function (p) {
+                var col = document.createElement('div');
+                col.className = 'col-6 col-md-4';
+                var card = document.createElement('div');
+                card.className = 'card product-card';
+                var body = document.createElement('div');
+                body.className = 'card-body p-2';
+                var nameDiv = document.createElement('div');
+                nameDiv.className = 'fw-semibold';
+                nameDiv.textContent = p.name;
+                var infoDiv = document.createElement('div');
+                infoDiv.className = 'small text-muted';
+                infoDiv.textContent = p.code + ' | ' + p.size + ' ' + p.color;
+                var priceDiv = document.createElement('div');
+                priceDiv.className = 'd-flex justify-content-between mt-1';
+                priceDiv.innerHTML = '<b>' + money(p.price) + '</b><span class="small ' + (p.stock <= 5 ? 'text-danger' : 'text-success') + '">' + p.stock + ' in stock</span>';
+                body.appendChild(nameDiv);
+                body.appendChild(infoDiv);
+                body.appendChild(priceDiv);
+                card.appendChild(body);
+                card.onclick = function () { addToCart(p); };
+                col.appendChild(card);
+                box.appendChild(col);
+            });
+        });
+}
+
+function addToCart(p) {
+    var found = cart.find(function (c) { return c.id === p.id; });
+    if (found) {
+        if (found.qty < p.stock) { found.qty++; }
+        else { alert('Only ' + p.stock + ' in stock'); }
+    } else {
+        cart.push({ id: p.id, name: p.name, price: p.price, gst: p.gst, stock: p.stock, qty: 1 });
+    }
+    renderCart();
+}
+
+function changeQty(index, value) {
+    var qty = parseInt(value);
+    if (isNaN(qty) || qty < 1) { qty = 1; }
+    if (qty > cart[index].stock) {
+        alert('Only ' + cart[index].stock + ' in stock');
+        qty = cart[index].stock;
+    }
+    cart[index].qty = qty;
+    renderCart();
+}
+
+function removeItem(index) {
+    cart.splice(index, 1);
+    renderCart();
+}
+
+function renderCart() {
+    var body = document.getElementById('cartBody');
+    body.innerHTML = '';
+    cart.forEach(function (c, i) {
+        var tr = document.createElement('tr');
+        var nameTd = document.createElement('td');
+        nameTd.textContent = c.name;
+        var small = document.createElement('div');
+        small.className = 'small text-muted';
+        small.textContent = money(c.price) + ' + ' + c.gst + '% GST';
+        nameTd.appendChild(small);
+
+        var qtyTd = document.createElement('td');
+        qtyTd.className = 'text-nowrap';
+        var minus = document.createElement('button');
+        minus.className = 'btn btn-sm btn-light'; minus.textContent = '-';
+        minus.onclick = function () { changeQty(i, c.qty - 1); };
+        var input = document.createElement('input');
+        input.type = 'number'; input.value = c.qty; input.className = 'qty-input form-control-sm border-0';
+        input.onchange = function () { changeQty(i, input.value); };
+        var plus = document.createElement('button');
+        plus.className = 'btn btn-sm btn-light'; plus.textContent = '+';
+        plus.onclick = function () { changeQty(i, c.qty + 1); };
+        qtyTd.appendChild(minus); qtyTd.appendChild(input); qtyTd.appendChild(plus);
+
+        var totalTd = document.createElement('td');
+        totalTd.className = 'text-end';
+        totalTd.textContent = money(c.price * c.qty);
+
+        var delTd = document.createElement('td');
+        var del = document.createElement('button');
+        del.className = 'btn btn-sm text-danger'; del.innerHTML = '<i class="bi bi-x-lg"></i>';
+        del.onclick = function () { removeItem(i); };
+        delTd.appendChild(del);
+
+        tr.appendChild(nameTd); tr.appendChild(qtyTd); tr.appendChild(totalTd); tr.appendChild(delTd);
+        body.appendChild(tr);
+    });
+    document.getElementById('emptyCart').style.display = cart.length ? 'none' : 'block';
+    calculate();
+}
+
+function calculate() {
+    var sub = 0, gstRaw = 0;
+    cart.forEach(function (c) {
+        sub += c.price * c.qty;
+        gstRaw += c.price * c.qty * c.gst / 100;
+    });
+    var discount = parseFloat(document.getElementById('discount').value) || 0;
+    if (discount > sub) { discount = sub; }
+    var gst = sub > 0 ? gstRaw * (sub - discount) / sub : 0;
+    var grand = sub - discount + gst;
+    document.getElementById('subTotal').textContent = money(sub);
+    document.getElementById('gstTotal').textContent = money(gst);
+    document.getElementById('grandTotal').textContent = money(grand);
+    var received = parseFloat(document.getElementById('received').value) || 0;
+    document.getElementById('changeAmt').textContent = money(received > grand ? received - grand : 0);
+    return grand;
+}
+
+function getPayMode() {
+    return document.querySelector('input[name="pay"]:checked').value;
+}
+
+function showError(text) {
+    var box = document.getElementById('errorBox');
+    box.textContent = text;
+    box.classList.remove('d-none');
+}
+
+function saveBill() {
+    document.getElementById('errorBox').classList.add('d-none');
+    if (cart.length === 0) { showError('Add at least one product'); return; }
+    var btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+
+    var items = cart.map(function (c) { return { id: c.id, qty: c.qty }; });
+    fetch("{% url 'save_bill' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({
+            items: items,
+            customer_name: document.getElementById('custName').value,
+            customer_phone: document.getElementById('custPhone').value,
+            payment_mode: getPayMode(),
+            discount: document.getElementById('discount').value || 0,
+            amount_received: document.getElementById('received').value || 0
+        })
+    })
+    .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+    .then(function (res) {
+        if (res.status === 200) {
+            window.location.href = res.data.print_url;
+        } else {
+            showError(res.data.error || 'Could not save the bill');
+            btn.disabled = false;
+            loadProducts();   // refresh stock
+        }
+    })
+    .catch(function () { showError('Network problem, please try again'); btn.disabled = false; });
+}
+
+document.getElementById('search').addEventListener('keyup', function (e) {
+    if (e.key === 'Enter') {
+        // barcode scanners press Enter after the code
+        var q = this.value.trim().toLowerCase();
+        var exact = shown.find(function (p) { return p.code.toLowerCase() === q; });
+        if (exact) { addToCart(exact); this.value = ''; loadProducts(); return; }
+        if (shown.length === 1) { addToCart(shown[0]); this.value = ''; loadProducts(); return; }
+    }
+    loadProducts();
+});
+document.getElementById('discount').addEventListener('input', calculate);
+document.getElementById('received').addEventListener('input', calculate);
+document.querySelectorAll('input[name="pay"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+        document.getElementById('cashBox').style.display = getPayMode() === 'cash' ? 'flex' : 'none';
+    });
+});
+document.getElementById('saveBtn').addEventListener('click', saveBill);
+document.getElementById('clearBtn').addEventListener('click', function () {
+    if (cart.length === 0 || confirm('Clear the current bill?')) {
+        cart = []; document.getElementById('discount').value = 0; document.getElementById('received').value = '';
+        renderCart();
+    }
+});
+
+loadProducts();
+renderCart();
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'shop/billing_base.html' %}
+{% block title %}My bills{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">My bills</h4>
+    <div class="card"><div class="card-body py-2 px-3"><span class="text-muted small">My sales today</span> <b>₹{{ today_total|floatformat:2 }}</b></div></div>
+</div>
+<div class="card"><div class="card-body">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+        <thead><tr><th>Bill no</th><th>Date</th><th>Customer</th><th>Payment</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for b in bills %}
+            <tr>
+                <td>{{ b.bill_no }}</td><td>{{ b.created_at|date:"d-m-Y H:i" }}</td>
+                <td>{{ b.customer_name|default:"Walk-in" }}</td><td>{{ b.payment_mode|upper }}</td>
+                <td>₹{{ b.grand_total }}</td>
+                <td><span class="badge {% if b.status == 'paid' %}bg-success{% else %}bg-secondary{% endif %}">{{ b.status }}</span></td>
+                <td class="text-end"><a href="{% url 'bill_print' b.id %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-printer"></i> View / print</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="7" class="text-muted">You have not made any bill yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div></div>
+{% endblock %}

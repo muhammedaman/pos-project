@@ -1,0 +1,40 @@
+{% extends 'shop/base.html' %}
+{% block title %}Bills{% endblock %}
+{% block content %}
+<h4 class="page-title mb-3">Bills</h4>
+<form method="get" class="row g-2 mb-3">
+    <div class="col-12 col-md-3"><input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Bill no / customer / phone"></div>
+    <div class="col-6 col-md-2"><input type="date" name="from" value="{{ from_date }}" class="form-control"></div>
+    <div class="col-6 col-md-2"><input type="date" name="to" value="{{ to_date }}" class="form-control"></div>
+    <div class="col-8 col-md-3">
+        <select name="staff" class="form-select">
+            <option value="">All staff</option>
+            {% for u in users %}<option value="{{ u.id }}" {% if staff_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.username }}</option>{% endfor %}
+        </select>
+    </div>
+    <div class="col-4 col-md-2"><button class="btn btn-outline-primary w-100">Filter</button></div>
+</form>
+<div class="card"><div class="card-body">
+    <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+        <thead><tr><th>Bill no</th><th>Date</th><th>Customer</th><th>Staff</th><th>Payment</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for b in bills %}
+            <tr>
+                <td><a href="{% url 'bill_detail' b.id %}">{{ b.bill_no }}</a></td>
+                <td>{{ b.created_at|date:"d-m-Y H:i" }}</td>
+                <td>{{ b.customer_name|default:"Walk-in" }}</td>
+                <td>{{ b.user.username }}</td>
+                <td>{{ b.payment_mode|upper }}</td>
+                <td>₹{{ b.grand_total }}</td>
+                <td><span class="badge {% if b.status == 'paid' %}bg-success{% else %}bg-secondary{% endif %}">{{ b.status }}</span></td>
+                <td class="text-end"><a href="{% url 'bill_print' b.id %}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-printer"></i></a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8" class="text-muted">No bills found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div></div>
+{% endblock %}

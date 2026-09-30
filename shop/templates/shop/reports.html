@@ -1,0 +1,74 @@
+{% extends 'shop/base.html' %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<h4 class="page-title mb-3">Reports</h4>
+<form method="get" class="row g-2 mb-3">
+    <div class="col-5 col-md-3"><input type="date" name="from" value="{{ from_date }}" class="form-control"></div>
+    <div class="col-5 col-md-3"><input type="date" name="to" value="{{ to_date }}" class="form-control"></div>
+    <div class="col-2 col-md-2"><button class="btn btn-primary w-100">Go</button></div>
+</form>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Total sales ({{ bill_count }} bills)</div><div class="stat-number">₹{{ total_sales|floatformat:2 }}</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Returns / refunds</div><div class="stat-number">₹{{ total_returns|floatformat:2 }}</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Net sales</div><div class="stat-number">₹{{ net_sales|floatformat:2 }}</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card"><div class="card-body"><div class="small text-muted">Purchases</div><div class="stat-number">₹{{ total_purchase|floatformat:2 }}</div></div></div></div>
+</div>
+<div class="row g-3 mb-3">
+    <div class="col-6"><div class="card"><div class="card-body py-2"><span class="text-muted small">GST collected</span> <b class="float-end">₹{{ total_gst|floatformat:2 }}</b></div></div></div>
+    <div class="col-6"><div class="card"><div class="card-body py-2"><span class="text-muted small">Discount given</span> <b class="float-end">₹{{ total_discount|floatformat:2 }}</b></div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h6>Day wise sales</h6>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Date</th><th>Bills</th><th class="text-end">Amount</th></tr></thead>
+                {% for d in daily_sales %}<tr><td>{{ d.day|date:"d-m-Y" }}</td><td>{{ d.count }}</td><td class="text-end">₹{{ d.total }}</td></tr>
+                {% empty %}<tr><td colspan="3" class="text-muted">No sales in this period.</td></tr>{% endfor %}
+            </table></div>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h6>Top selling products</h6>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Product</th><th>Qty sold</th><th class="text-end">Amount</th></tr></thead>
+                {% for p in top_products %}<tr><td>{{ p.product__name }}</td><td>{{ p.qty }}</td><td class="text-end">₹{{ p.amount }}</td></tr>
+                {% empty %}<tr><td colspan="3" class="text-muted">No sales in this period.</td></tr>{% endfor %}
+            </table></div>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h6>Staff wise sales</h6>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Staff</th><th>Bills</th><th class="text-end">Amount</th></tr></thead>
+                {% for s in staff_sales %}<tr><td>{{ s.user__username }}</td><td>{{ s.count }}</td><td class="text-end">₹{{ s.total }}</td></tr>
+                {% empty %}<tr><td colspan="3" class="text-muted">No sales in this period.</td></tr>{% endfor %}
+            </table></div>
+        </div></div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100"><div class="card-body">
+            <h6>Payment mode wise sales</h6>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Mode</th><th>Bills</th><th class="text-end">Amount</th></tr></thead>
+                {% for p in payment_sales %}<tr><td>{{ p.payment_mode|upper }}</td><td>{{ p.count }}</td><td class="text-end">₹{{ p.total }}</td></tr>
+                {% empty %}<tr><td colspan="3" class="text-muted">No sales in this period.</td></tr>{% endfor %}
+            </table></div>
+        </div></div>
+    </div>
+    <div class="col-12">
+        <div class="card"><div class="card-body">
+            <h6>Low stock products</h6>
+            <div class="table-responsive"><table class="table table-sm mb-0">
+                <thead><tr><th>Code</th><th>Product</th><th>Stock</th><th>Minimum</th></tr></thead>
+                {% for p in low_stock %}<tr><td>{{ p.code }}</td><td>{{ p.name }}</td><td class="text-danger fw-bold">{{ p.stock }}</td><td>{{ p.min_stock }}</td></tr>
+                {% empty %}<tr><td colspan="4" class="text-muted">All products have enough stock.</td></tr>{% endfor %}
+            </table></div>
+        </div></div>
+    </div>
+</div>
+{% endblock %}

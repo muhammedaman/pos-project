@@ -1,0 +1,39 @@
+{% extends 'shop/base.html' %}
+{% block title %}New return{% endblock %}
+{% block content %}
+<h4 class="page-title mb-3">New product return</h4>
+
+<form method="get" class="row g-2 mb-3" style="max-width: 520px;">
+    <div class="col-8"><input type="text" name="bill_no" value="{{ bill_no }}" class="form-control" placeholder="Enter bill number (eg BILL00001)"></div>
+    <div class="col-4"><button class="btn btn-primary w-100">Find bill</button></div>
+</form>
+
+{% if bill %}
+<div class="card"><div class="card-body">
+    <h6>{{ bill.bill_no }} - {{ bill.customer_name|default:"Walk-in" }} - ₹{{ bill.grand_total }}</h6>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="bill_id" value="{{ bill.id }}">
+        <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Product</th><th>Sold</th><th>Can return</th><th style="width:120px;">Return qty</th></tr></thead>
+            <tbody>
+            {% for i in items %}
+                <tr>
+                    <td>{{ i.product.name }}</td><td>{{ i.quantity }}</td><td>{{ i.can_return }}</td>
+                    <td><input type="number" name="qty_{{ i.id }}" min="0" max="{{ i.can_return }}" value="0" class="form-control form-control-sm" {% if i.can_return == 0 %}disabled{% endif %}></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        <div class="mb-3" style="max-width: 420px;">
+            <label class="form-label">Reason</label>
+            <input type="text" name="reason" class="form-control" placeholder="Size problem, damaged, colour fade...">
+        </div>
+        <button class="btn btn-primary">Save return</button>
+        <div class="form-text mt-2">Returned items are added back to stock and the refund amount is written in the ledger.</div>
+    </form>
+</div></div>
+{% endif %}
+{% endblock %}
