@@ -69,7 +69,7 @@ import pymysql
 pymysql.install_as_MySQLdb()
 ```
 
-## Test credentials (created by `demo_data`)
+## Test credentials
 | Role | Username | Password |
 |---|---|---|
 | Admin | `admin` | `admin123` |
@@ -82,32 +82,3 @@ pymysql.install_as_MySQLdb()
 | Login | `/login/` |
 | Admin portal | `/dashboard/` |
 | Billing portal | `/billing/` |
-
-## Assumptions and limitations
-- Product price is entered **without GST**; GST % is added on top per product.
-- Bill discount is a flat rupee amount; GST is calculated on the price after discount.
-- Return refund = price + GST, reduced by the same share of the bill discount.
-- A bill that already has returns cannot be cancelled.
-- A product / staff / supplier that is already used in bills or purchases is not hard deleted
-  (product and staff are deactivated instead) to keep the old bills correct.
-- `USE_TZ = False` is used so date filters work in MySQL without loading time zone tables.
-- Shop name and address printed on the bill are in `settings.py` (`SHOP_NAME`, etc.).
-- Bootstrap and fonts are loaded from CDN, so internet is needed to view the styles.
-
-## Deploying (PythonAnywhere free plan has MySQL)
-1. Upload / clone the repo, create a virtualenv and `pip install -r requirements.txt`.
-2. Create the MySQL database in the Databases tab and put the host / name / user / password in `settings.py`.
-3. `python manage.py migrate`, `python manage.py demo_data`, `python manage.py collectstatic`.
-4. Set `DEBUG = False`, add your domain to `ALLOWED_HOSTS`, and map `/static/` to the `staticfiles` folder in the Web tab.
-
----
-
-## Reply email for submission (fill your links)
-1. **Short project description:** POS and billing software for a textile shop with an admin portal (products, staff,
-   suppliers, purchases, returns, ledger, reports, bills), a staff billing portal with printable bills, and a
-   mobile style admin UI.
-2. **Technology stack:** Python, Django 4.2, MySQL, Bootstrap 5, JavaScript, HTML/CSS.
-3. **Live URL:** <your-deployed-url>
-5. **GitHub:** <your-github-repo-url>
-6. **Test credentials:** Admin `admin / admin123`, Staff `staff1 / staff123`, Staff `staff2 / staff123`
-7. **Notes:** see "Assumptions and limitations" above in README.
